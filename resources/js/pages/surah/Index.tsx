@@ -9,6 +9,7 @@ interface Word {
     id: number;
     position: number;
     text_uthmani: string;
+    text_indopak: string;
     char_type_name: string;
     location: string;
 }
@@ -18,6 +19,7 @@ interface Verse {
     verse_number: number;
     verse_key: string;
     text_uthmani: string;
+    text_: string;
     page_number: number;
     juz_number: number;
     end_marker: string;
@@ -96,16 +98,10 @@ export default function SurahIndex() {
             return;
         }
 
-        const savedThemeLocal = localStorage.getItem('theme');
+        const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const initialDarkMode = savedTheme === 'dark' || (savedTheme === null && prefersDark);
 
-        const savedWordErrors = localStorage.getItem('wordErrors');
-        const savedVerseErrors = localStorage.getItem('verseErrors');
-        if (savedWordErrors) setWordErrors(JSON.parse(savedWordErrors));
-        if (savedVerseErrors) setVerseErrors(JSON.parse(savedVerseErrors));
-
-        // Inisialisasi tema berdasarkan penyimpanan lokal atau preferensi sistem
-        const initialDarkMode = savedThemeLocal === 'dark' || (!savedThemeLocal && prefersDark);
         setIsDarkMode(initialDarkMode);
         if (initialDarkMode) {
             document.documentElement.classList.add('dark');
@@ -118,7 +114,13 @@ export default function SurahIndex() {
         const listener = (e: MediaQueryListEvent) => {
             const newTheme = e.matches;
             setIsDarkMode(newTheme);
-            updateTheme(newTheme);
+            if (newTheme) {
+                document.documentElement.classList.add('dark');
+                setCookie('s_night_mode', '1', 30);
+            } else {
+                document.documentElement.classList.remove('dark');
+                setCookie('s_night_mode', '0', 30);
+            }
         };
         const mq = window.matchMedia('(prefers-color-scheme: dark)');
         mq.addEventListener('change', listener);
@@ -132,22 +134,18 @@ export default function SurahIndex() {
         document.cookie = `${name}=${value};expires=${date.toUTCString()};path=/`;
     };
 
-    const updateTheme = (dark: boolean) => {
-        if (dark) {
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme', 'dark');
-            setCookie('s_night_mode', '1', 30);
-        } else {
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme', 'light');
-            setCookie('s_night_mode', '0', 30);
-        }
-    };
-
     const toggleTheme = () => {
         setIsDarkMode((prev) => {
             const newTheme = !prev;
-            updateTheme(newTheme);
+            if (newTheme) {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                setCookie('s_night_mode', '1', 30);
+            } else {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                setCookie('s_night_mode', '0', 30);
+            }
             return newTheme;
         });
     };
@@ -314,29 +312,7 @@ export default function SurahIndex() {
     return (
         <AppWrapper>
             <Head title={`${surah.name_simple} - Recap`} />
-            <QuranHeader page={1} translateMode="read" target="/result" />
-            <style>
-                {`
-                    :root {
-                        --background-color: dark:#1a202c #ffffff};
-                        --text-color: dark: #ffffff #000000};
-                    }
-                    body {
-                        background-color: var(--background-color);
-                        color: var(--text-color);
-                        transition: background-color 0.3s, color 0.3s;
-                    }
-                    .dark .text-white {
-                        color: var(--text-color);
-                    }
-                    .dark .text-black {
-                        color: var(--text-color);
-                    }
-                    .dark .border-gray-300 {
-                        border-color: dark:#4a5568 #e2e8f0'};
-                    }
-                `}
-            </style>
+            <QuranHeader page={1} translateMode="read" target={route('result.index')} />
             <div className="mx-auto max-w-4xl overflow-auto p-4">
                 <MistakeModal
                     isOpen={modalOpen}
@@ -356,17 +332,17 @@ export default function SurahIndex() {
                     verseErrors={verseErrors}
                 />
                 <div className="mt-20 mb-12 text-center">
-                    <p className={`text-lg dark:text-gray-300 text-gray-700'}`}>
+                    <p className={`text-lg dark:text-gray-300 text-gray-700`}>
                         {surah.name_simple} ({surah.id})
                     </p>
                     {surah.bismillah_pre && (
-                        <p className={`font-arabic mt-6 text-4xl dartext-gray-300 text-gray-700'}`} style={{ direction: 'rtl' }}>
+                        <p className={`font-arabic mt-6 text-4xl dark:text-gray-300 text-gray-700`} style={{ direction: 'rtl' }}>
                             بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ
                         </p>
                     )}
                 </div>
                 <div
-                    className={`font-arabic text-3xl dark:text-gray-300 text-gray-700'}`}
+                    className={`font-arabic text-3xl dark:text-gray-300 text-gray-700`}
                     style={{
                         direction: 'rtl',
                         textAlign: 'justify',
@@ -435,9 +411,9 @@ export default function SurahIndex() {
 
                                     {groupedVerses[verse.page_number][groupedVerses[verse.page_number].length - 1].verse.id === verse.id && (
                                         <div className="my-4 flex items-center">
-                                            <hr className={`flex-1 border-t border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`} />
-                                            <span className={`mx-4 text-sm font-bold ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>Page {verse.page_number}</span>
-                                            <hr className={`flex-1 border-t border-2 ${isDarkMode ? 'border-gray-600' : 'border-gray-300'}`} />
+                                            <hr className={`flex-1 border-t border-2 dark:border-gray-600 border-gray-300`} />
+                                            <span className={`mx-4 text-sm font-bold dark:text-gray-300 text-gray-700`}>Page {verse.page_number}</span>
+                                            <hr className={`flex-1 border-t border-2 dark:border-gray-600 border-gray-300`} />
                                         </div>
                                     )}
                                     {index < verses.length - 1 && ' '}
@@ -445,7 +421,7 @@ export default function SurahIndex() {
                             );
                         })
                     ) : (
-                        <div className={'dark:text-gray-300 text-gray-700'}>Tidak ada data ayat untuk ditampilkan.</div>
+                        <div>Tidak ada data ayat untuk ditampilkan.</div>
                     )}
                 </div>
             </div>

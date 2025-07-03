@@ -1,5 +1,5 @@
 import AppWrapper from '@/components/layouts/app-wrapper';
-import { useForm, router } from '@inertiajs/react';
+import { useForm, router, usePage } from '@inertiajs/react';
 import axios from 'axios';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, FileText } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import Combobox from '@/components/ui/combobox';
 import { setupTranslations } from '@/features/i18n/i18n';
 import { useTheme } from '../../../components/layouts/theme-context';
+import { Auth } from '@/types';
 
 // Updated Surah interface to match localStorage structure
 interface Surah {
@@ -119,19 +120,21 @@ const t = (key: string): string => {
 };
 
 const ResultFormLayout: React.FC = () => {
+    const { props } = usePage<{ auth: Auth }>();
     const { isDarkMode } = useTheme();
     const [panels, setPanels] = useState<{ [key: string]: boolean }>({});
     const [setoranData, setSetoranData] = useState<SetoranData | null>(null);
     const { t } = useTranslation('resultForm');
     const [translationsReady, setTranslationsReady] = useState(false);
+    const [showSuccessNotification, setShowSuccessNotification] = useState(false);
 
     useEffect(() => {
-            const loadTranslations = async () => {
-                await setupTranslations('resultForm');
-                setTranslationsReady(true);
-            };
-            loadTranslations();
-        }, []);
+        const loadTranslations = async () => {
+            await setupTranslations('resultForm');
+            setTranslationsReady(true);
+        };
+        loadTranslations();
+    }, []);
 
     const form = useForm<FormData>({
         reciter: null,
@@ -259,7 +262,7 @@ const ResultFormLayout: React.FC = () => {
     const generateConclusionOptions = (): { value: string; label: string }[] => {
         return ['Excellent', 'Very Good', 'Good', 'Pass', 'Weak', 'Not Pass'].map((option) => ({
             value: option,
-            label: t(`rekapan.kesimpulan_options.${option}`), // Gunakan t dari useTranslation
+            label: t(`rekapan.kesimpulan_options.${option}`),
         }));
     };
 
@@ -295,7 +298,7 @@ const ResultFormLayout: React.FC = () => {
         if (Object.keys(form.errors).length > 0) return;
 
         // Pastikan parseInt hanya dilakukan jika nilai ada
-        const penerima = form.data.recipient ? parseInt(form.data.recipient) : 0;
+        const penerima = props.auth.user.user_id;
         const nomor = form.data.surah && form.data.surah.length > 0 ? parseInt(form.data.surah[0].id) : 0;
 
         // Transformasi data perhalaman
@@ -327,7 +330,10 @@ const ResultFormLayout: React.FC = () => {
             },
         })
         .then((response) => {
-            alert('Data berhasil dikirim!');
+            // Tampilkan notifikasi sukses
+            setShowSuccessNotification(true);
+            setTimeout(() => setShowSuccessNotification(false), 3000); // Hilang setelah 3 detik
+
             // Simpan data kesalahan kembali ke localStorage
             const updatedMistake = form.data.mistake;
             const existingData = localStorage.getItem('setoran-data');
@@ -335,11 +341,10 @@ const ResultFormLayout: React.FC = () => {
                 const parsedData = JSON.parse(existingData);
                 localStorage.setItem('setoran-data', JSON.stringify({ ...parsedData, mistake: updatedMistake }));
             }
+
             // Simpan wordErrors dan verseErrors secara terpisah
             const wordErrorsFromMistake: { [key: number]: string } = {};
             const verseErrorsFromMistake: { [key: number]: string } = {};
-            // Asumsi verses tersedia dari konteks atau prop (jika tidak ada, perlu diintegrasikan)
-            // Define the Verse and Word interfaces for proper typing
             interface Word {
                 id: number;
                 text_uthmani: string;
@@ -368,8 +373,8 @@ const ResultFormLayout: React.FC = () => {
             });
             localStorage.setItem('wordErrors', JSON.stringify(wordErrorsFromMistake));
             localStorage.setItem('verseErrors', JSON.stringify(verseErrorsFromMistake));
-            // router.visit('/');
-            window.location.href = '/'; // Redirect to home page after successful submission
+
+            router.visit(route('home'));
         })
         .catch((error) => {
             if (error.response && error.response.status === 422) {
@@ -384,7 +389,7 @@ const ResultFormLayout: React.FC = () => {
         });
     };
 
-    if (!setoranData) {
+    if (!translationsReady || !setoranData) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
                 <div className="text-center">
@@ -426,6 +431,14 @@ const ResultFormLayout: React.FC = () => {
                             </svg>
                         </button>
 
+                        {/* Notifikasi Sukses */}
+                        {showSuccessNotification && (
+                            <div className="mb-4 rounded-md bg-green-50 dark:bg-green-900 p-4 flex items-center">
+                                <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400 mr-2" />
+                                <p className="text-sm text-green-700 dark:text-green-200">Data berhasil dikirim</p>
+                            </div>
+                        )}
+
                         <div className="mb-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
                             <div className="mb-4 grid grid-cols-1 gap-4">
                                 <div>
@@ -451,17 +464,17 @@ const ResultFormLayout: React.FC = () => {
                                     <div>
                                         <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">{t('rekapan.form.awal_ayat')}</label>
                                         <div className="w-full">
-  <Combobox
-    options={verseOptions}
-    placeholder={t('placeholders.select_verse')}
-    searchPlaceholder={t('placeholders.search_verse')}
-    notFoundText={t('notFoundText.verse_not_found')}
-    value={form.data.awalAyat}
-    onValueChange={(value) => handleChange('awalAyat', value)}
-    className="w-full" // Tambahkan ini untuk menyamakan lebar dengan "Awal Surah"
-  />
-  {form.errors.awalAyat && <p className="mt-1 text-xs text-red-500 dark:text-red-400">{form.errors.awalAyat}</p>}
-</div>
+                                            <Combobox
+                                                options={verseOptions}
+                                                placeholder={t('placeholders.select_verse')}
+                                                searchPlaceholder={t('placeholders.search_verse')}
+                                                notFoundText={t('notFoundText.verse_not_found')}
+                                                value={form.data.awalAyat}
+                                                onValueChange={(value) => handleChange('awalAyat', value)}
+                                                className="w-full"
+                                            />
+                                            {form.errors.awalAyat && <p className="mt-1 text-xs text-red-500 dark:text-red-400">{form.errors.awalAyat}</p>}
+                                        </div>
                                     </div>
                                     <div>
                                         <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">{t('rekapan.form.akhir_surah')}</label>
@@ -475,34 +488,34 @@ const ResultFormLayout: React.FC = () => {
                                     <div>
                                         <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">{t('rekapan.form.akhir_ayat')}</label>
                                         <div className="w-full">
-  <Combobox
-    options={verseOptions}
-    placeholder={t('placeholders.select_verse')}
-    searchPlaceholder={t('placeholders.search_verse')}
-    notFoundText={t('notFoundText.verse_not_found')}
-    value={form.data.akhirAyat}
-    onValueChange={(value) => handleChange('akhirAyat', value)}
-    className="w-full" // Tambahkan ini untuk menyamakan lebar dengan "Awal Surah"
-  />
-  {form.errors.akhirAyat && <p className="mt-1 text-xs text-red-500 dark:text-red-400">{form.errors.akhirAyat}</p>}
-</div>
+                                            <Combobox
+                                                options={verseOptions}
+                                                placeholder={t('placeholders.select_verse')}
+                                                searchPlaceholder={t('placeholders.search_verse')}
+                                                notFoundText={t('notFoundText.verse_not_found')}
+                                                value={form.data.akhirAyat}
+                                                onValueChange={(value) => handleChange('akhirAyat', value)}
+                                                className="w-full"
+                                            />
+                                            {form.errors.akhirAyat && <p className="mt-1 text-xs text-red-500 dark:text-red-400">{form.errors.akhirAyat}</p>}
+                                        </div>
                                     </div>
                                 </div>
 
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">{t('rekapan.form.kesimpulan')}</label>
                                     <div className="w-full">
-  <Combobox
-    options={conclusionOptions}
-    placeholder={t('placeholders.select_conclusion')}
-    searchPlaceholder={t('placeholders.search_conclusion')}
-    notFoundText={t('notFoundText.conclusion_not_found')}
-    value={form.data.kesimpulan}
-    onValueChange={(value) => handleChange('kesimpulan', value)}
-    className="w-full" // Tambahkan ini untuk menyamakan lebar dengan "Awal Surah"
-  />
-  {form.errors.kesimpulan && <p className="mt-1 text-xs text-red-500 dark:text-red-400">{form.errors.kesimpulan}</p>}
-</div>
+                                        <Combobox
+                                            options={conclusionOptions}
+                                            placeholder={t('placeholders.select_conclusion')}
+                                            searchPlaceholder={t('placeholders.search_conclusion')}
+                                            notFoundText={t('notFoundText.conclusion_not_found')}
+                                            value={form.data.kesimpulan}
+                                            onValueChange={(value) => handleChange('kesimpulan', value)}
+                                            className="w-full"
+                                        />
+                                        {form.errors.kesimpulan && <p className="mt-1 text-xs text-red-500 dark:text-red-400">{form.errors.kesimpulan}</p>}
+                                    </div>
                                 </div>
                             </div>
 

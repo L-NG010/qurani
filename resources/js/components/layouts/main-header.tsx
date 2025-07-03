@@ -83,11 +83,11 @@ const QuranHeader: React.FC<QuranHeaderProps> = ({ page, translateMode = 'read',
 
     const handleClick = () => {
         if (target) {
-             window.location.href = target;
-             console.log(target);
+            window.location.href = target;
+            console.log(target);
         } else {
             window.location.href = '/result';
-             console.log(target);
+            console.log(target);
         }
     };
 

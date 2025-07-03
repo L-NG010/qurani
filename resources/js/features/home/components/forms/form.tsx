@@ -9,8 +9,7 @@ import { Friend } from '../../types/friend';
 import { Group } from '../../types/group';
 import { Juz } from '../../types/juz';
 import { pages } from '../../constanst/pages';
-import { usePage } from '@inertiajs/react';
-import { Inertia } from '@inertiajs/inertia';
+import { usePage, router } from '@inertiajs/react';
 
 // Fungsi untuk mengelola cookie
 const getCookie = (name: string): string | null => {
@@ -312,7 +311,7 @@ const QuraniCard: React.FC<QuraniFormProps> = ({ friends, groups, chapters, juzs
     }
 
     const redirectUrl = getRedirectUrl();
-    if (redirectUrl !== '/') Inertia.visit(redirectUrl);
+    if (redirectUrl !== '/') router.visit(redirectUrl);
     else alert(t('errors.invalid_selection'));
   };
 
@@ -368,7 +367,12 @@ const QuraniCard: React.FC<QuraniFormProps> = ({ friends, groups, chapters, juzs
               <h2 className={`text-xl sm:text-2xl font-semibold text-black dark:text-white`}>{t('header')}</h2>
               <button
                 className={`rounded-full p-2 hover:cursor-pointer text-gray-600 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-white`}
-                onClick={() => (window.top.location.href = `${config.PARENT_WEB}/settings/qurani`)}
+                onClick={() => {
+                  if (window.top) {
+                    // Replace the below URL with your actual parent web URL if not using a config object
+                    window.top.location.href = `${import.meta.env.VITE_PARENT_URL}/settings/qurani`;
+                  }
+                }}
               >
                 <Settings size={20} />
               </button>
@@ -603,7 +607,7 @@ const QuraniCard: React.FC<QuraniFormProps> = ({ friends, groups, chapters, juzs
                       {errors.surah && <p className="mt-1 text-sm text-red-500">{errors.surah}</p>}
                     </div>
                   </div>
-                  <div className="ml-0 sm:ml-26 flex flex-wrap gap-2">
+                  <div className="ml-0 sm:ml-26 flex flex-wrap gap-2 ">
                     {[
                       { value: '1', name: t('buttons.quick_select.1') },
                       { value: '36', name: t('buttons.quick_select.36') },
@@ -613,7 +617,7 @@ const QuraniCard: React.FC<QuraniFormProps> = ({ friends, groups, chapters, juzs
                       <button
                         key={button.value}
                         type="button"
-                        className={`w-full sm:w-auto rounded-md px-3 py-1.5 text-sm font-medium hover:cursor-pointer dark:bg-gray-600 text-gray-200 hover:bg-gray-500 bg-gray-300 text-black hover:bg-gray-400'}`}
+                        className={`w-full sm:w-auto rounded-md px-3 py-1.5 text-sm font-medium hover:cursor-pointer dark:bg-gray-600 dark:text-gray-200 hover:bg-gray-400 bg-gray-300 text-black hover:bg-gray-400'}`}
                         onClick={() => handleQuickSelect(button.value)}
                       >
                         {button.name}
@@ -624,7 +628,7 @@ const QuraniCard: React.FC<QuraniFormProps> = ({ friends, groups, chapters, juzs
                     <button
                       type="button"
                       onClick={handleReset}
-                      className={`w-full sm:w-auto rounded-md px-4 py-2 text-sm font-medium text-white hover:cursor-pointer dark:bg-gray-600 hover:bg-gray-500 bg-gray-300 hover:bg-gray-400'} mb-2.5 sm:mb-0 sm:mr-2`}
+                      className={`w-full sm:w-auto rounded-md px-4 py-2 text-sm font-medium text-white hover:cursor-pointer dark:bg-blue-600 hover:bg-blue-700 bg-[rgb(94,114,228)] hover:bg-[rgb(57,69,138)]'} mb-2.5 sm:mb-0 sm:mr-2`}
                     >
                       {t('buttons.reset')}
                     </button>

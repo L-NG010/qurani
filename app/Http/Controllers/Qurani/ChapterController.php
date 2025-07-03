@@ -20,6 +20,12 @@ class ChapterController extends Controller
             abort(404, 'Surah tidak ditemukan');
         }
 
+        // Determine font type from request (default to uthmani)
+        $fontType = $request->query('font_type', 'uthmani'); // 'uthmani' or 'indopak'
+        if (!in_array($fontType, ['uthmani', 'indopak'])) {
+            $fontType = 'uthmani'; // Fallback to uthmani if invalid
+        }
+
         $surah = Chapter::findOrFail($id, [
             'id',
             'revelation_place',
@@ -37,6 +43,7 @@ class ChapterController extends Controller
                 'verse_number',
                 'verse_key',
                 'text_uthmani',
+                'text_indopak',
                 'page_number',
                 'juz_number'
             ])
@@ -51,18 +58,19 @@ class ChapterController extends Controller
                 }
             })
                 ->where('char_type_name', 'end')
-                ->select(['location', 'text_uthmani'])
+                ->select(['location', 'text_uthmani', 'text_indopak'])
                 ->get()
                 ->keyBy(function ($word) {
                     [$surah, $verse] = explode(':', $word->location);
                     return "$surah:$verse";
                 });
 
-            $verses->transform(callback: function ($verse) use ($wordsGroup, $endMarkers) {
-                $verse->words = $wordsGroup->get($verse->verse_key, collect())->map(function ($word) {
+            $verses->transform(function ($verse) use ($wordsGroup, $endMarkers, $fontType) {
+                $verse->words = $wordsGroup->get($verse->verse_key, collect())->map(function ($word) use ($fontType) {
                     return [
                         'id' => $word->id,
                         'position' => $word->position,
+                        'text_indopak' => $word->text_indopak,
                         'text_uthmani' => $word->text_uthmani,
                         'char_type_name' => $word->char_type_name,
                         'location' => $word->location
@@ -70,7 +78,11 @@ class ChapterController extends Controller
                 })->filter(function ($word) {
                     return $word['char_type_name'] === 'word';
                 })->values();
-                $verse->end_marker = $endMarkers->get($verse->verse_key, (object)['text_uthmani' => ''])->text_uthmani;
+                $verse->text = $fontType === 'indopak' ? $verse->text_indopak : $verse->text_uthmani;
+                $verse->end_marker = $endMarkers->get($verse->verse_key, (object)[
+                    'text_uthmani' => '',
+                    'text_indopak' => ''
+                ])->{$fontType === 'indopak' ? 'text_indopak' : 'text_uthmani'};
                 return $verse;
             });
         }
@@ -83,7 +95,8 @@ class ChapterController extends Controller
                 'name_simple' => $surah->name_simple,
                 'name_arabic' => $surah->name_arabic,
                 'verses_count' => $surah->verses_count,
-                'translated_name' => $surah->translated_name
+                'translated_name' => $surah->translated_name,
+                'font_type' => $fontType
             ],
             'verses' => $verses
         ]);

@@ -5,7 +5,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
-import { Inertia } from '@inertiajs/inertia';
+import { router } from '@inertiajs/react';
 import { postMessage } from './utils/postMessage';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -20,7 +20,8 @@ createInertiaApp({
 
         root.render(<App {...props} />);
 
-        Inertia.on('start', (event) => {
+        router.on('start', (event) => {
+            console.warn(event.detail.visit.url.pathname);
             postMessage('POST', 'route_change', { path: event.detail.visit.url.pathname });
         })
     },

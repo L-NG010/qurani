@@ -38,6 +38,7 @@ interface PageProps {
     page: Page;
     verses: Verse[];
     chapters: { [key: number]: Chapter };
+    [key: string]: any;
 }
 
 interface ErrorsByPage {
@@ -301,19 +302,19 @@ export default function PageIndex() {
                             <div key={surahId} className="mb-8">
                                 {/* Surah Header */}
                                 <div className="text-center">
-                                    <h2 className="font-arabic text-3xl font-bold text-black">{surah.name_arabic}</h2>
-                                    <p className="mt-2 text-lg text-gray-600">
+                                    <h2 className="font-arabic text-3xl font-bold dark:text-gray-300 text-gray-700">{surah.name_arabic}</h2>
+                                    <p className={`text-lg dark:text-gray-300 text-gray-700'}`}>
                                         {surah.translated_name.name} ({surah.name_simple})
                                     </p>
                                     {surah.bismillah_pre && (
-                                        <p className="font-arabic mt-4 text-4xl text-black" style={{ direction: 'rtl' }}>
+                                        <p className={`font-arabic mt-6 text-4xl dark:text-gray-300 text-gray-700'}`} style={{ direction: 'rtl' }}>
                                             بِسْمِ ٱللَّهِ ٱلرَّحْمَـٰنِ ٱلرَّحِيمِ
                                         </p>
                                     )}
                                 </div>
                                 {/* Verses */}
                                 <div
-                                    className="font-arabic text-3xl text-black"
+                                    className={`font-arabic text-3xl dark:text-gray-300 text-gray-700'}`}
                                     style={{
                                         direction: 'rtl',
                                         textAlign: 'justify',

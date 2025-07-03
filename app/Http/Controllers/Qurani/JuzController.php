@@ -40,7 +40,7 @@ class JuzController extends Controller
             for ($i = (int)$start; $i <= (int)$end; $i++) {
                 $verseKeys[] = "$surah:$i";
             }
-        }
+        } 
 
         // Fetch chapters for the Surahs
         $chapters = Chapter::whereIn('id', $surahIds)
@@ -56,7 +56,8 @@ class JuzController extends Controller
 
         // Fetch verses for the Juz
         $verses = Verses::whereIn('verse_key', $verseKeys)
-            ->orderBy('verse_key')
+            ->orderByRaw("CAST(SUBSTRING_INDEX(verse_key, ':', 1) AS UNSIGNED)")
+            ->orderByRaw("CAST(SUBSTRING_INDEX(verse_key, ':', -1) AS UNSIGNED)")
             ->select([
                 'id',
                 'verse_number',

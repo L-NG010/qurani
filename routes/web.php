@@ -9,6 +9,7 @@ use App\Http\Controllers\Qurani\HomeController;
 use App\Http\Controllers\Qurani\JuzController;
 use App\Http\Controllers\Qurani\PageController;
 use App\Http\Controllers\Qurani\AppLoadController;
+use App\Http\Controllers\SetoranController; // Tambahkan use untuk SetoranController
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cookie;
@@ -20,7 +21,10 @@ Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-Route::get('/result', [ResultController::class, 'index'])->name('result');
+// Ubah rute lama '/result' menjadi lebih spesifik
+Route::get('/result/index', [ResultController::class, 'index'])->name('result.index');
+// Tambahkan rute baru dengan parameter {id}
+Route::get('/result/{id}', [SetoranController::class, 'showResult'])->name('result');
 Route::get('/result/page', [ResultController::class, 'page'])->name('result.page');
 
 Route::get('/recap', function () {
@@ -38,7 +42,6 @@ Route::get('/redirect', function () {
     return Inertia::render('redirect');
 })->name('redirect');
 
-
 Route::post('/set-cookie', function (Request $request) {
     $u_id = $request->input('u_id');
 
@@ -51,6 +54,6 @@ Route::post('/set-cookie', function (Request $request) {
 
 Route::get('/setoran/{id}', [HomeController::class, 'getSetoranById'])->name('setoran.show');
 Route::get('/recap', [HomeController::class, 'recap'])->name('recap');
-Route::get('/recap/surah/{id}',[RecapController::class,'index'])->name('recap.surah');
-Route::get('/recap/page/{id}',[RecapController::class,'page'])->name('recap.page');
+Route::get('/recap/surah/{id}', [RecapController::class, 'index'])->name('recap.surah');
+Route::get('/recap/page/{id}', [RecapController::class, 'page'])->name('recap.page');
 Route::post('/setoran/{id}/sign', [HomeController::class, 'updateSignature']);

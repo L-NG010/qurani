@@ -9,7 +9,7 @@ i18n
     .use(HttpBackend)
     .use(initReactI18next)
     .init({
-        debug: true,
+        debug: false,
         lng: storedLocale,
         supportedLngs: ['en_US', 'id_ID', 'ra_RA'],
         fallbackLng: 'id_ID',
