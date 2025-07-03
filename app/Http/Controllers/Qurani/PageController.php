@@ -6,14 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Qurani\Chapter;
 use App\Models\Qurani\Verses;
 use App\Models\Qurani\Word;
+use App\Traits\ErrorLabel;
 use App\Traits\FetchWords;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class PageController extends Controller
 {
-    use FetchWords;
+    use FetchWords, ErrorLabel;
 
     public function show($id, Request $request)
     {
@@ -51,7 +53,7 @@ class PageController extends Controller
             ])
             ->get()
             ->keyBy('id');
-
+        $errorLabels = $this->ErrorLabelGenerate(Auth::user());
         // Fetch words and end markers
         if ($verses->isNotEmpty()) {
             $verseKeys = $verses->pluck('verse_key')->toArray();
@@ -93,7 +95,8 @@ class PageController extends Controller
                 'page_number' => (int) $id
             ],
             'verses' => $verses,
-            'chapters' => $chapters
+            'chapters' => $chapters,
+            "errorLabels" => $errorLabels
         ]);
     }
 }

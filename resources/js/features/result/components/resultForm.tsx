@@ -6,6 +6,7 @@ import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, FileText } from 'luc
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../../components/layouts/theme-context';
+import { Auth } from '@/types';
 
 // Updated Surah interface to match localStorage structure
 interface Surah {
@@ -142,6 +143,7 @@ const ResultFormLayout: React.FC = () => {
     const [setoranData, setSetoranData] = useState<SetoranData | null>(null);
     const { t } = useTranslation('resultForm');
     const [translationsReady, setTranslationsReady] = useState(false);
+    const [showSuccessNotification, setShowSuccessNotification] = useState(false);
 
     useEffect(() => {
         const loadTranslations = async () => {
@@ -277,7 +279,7 @@ const ResultFormLayout: React.FC = () => {
     const generateConclusionOptions = (): { value: string; label: string }[] => {
         return ['Excellent', 'Very Good', 'Good', 'Pass', 'Weak', 'Not Pass'].map((option) => ({
             value: option,
-            label: t(`rekapan.kesimpulan_options.${option}`), // Gunakan t dari useTranslation
+            label: t(`rekapan.kesimpulan_options.${option}`),
         }));
     };
 
@@ -315,7 +317,7 @@ const ResultFormLayout: React.FC = () => {
         if (Object.keys(form.errors).length > 0) return;
 
         // Pastikan parseInt hanya dilakukan jika nilai ada
-        const penerima = form.data.recipient ? parseInt(form.data.recipient) : 0;
+        const penerima = props.auth.user.user_id;
         const nomor = form.data.surah && form.data.surah.length > 0 ? parseInt(form.data.surah[0].id) : 0;
 
         // Transformasi data perhalaman
@@ -338,74 +340,76 @@ const ResultFormLayout: React.FC = () => {
             ket: form.data.catatan,
             perhalaman: perhalamanData,
         };
-        console.log('form_result ', postData);
-        axios
-            .post('/api/result', postData, {
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                    Accept: 'application/json',
-                },
-            })
-            .then((response) => {
-                alert('Data berhasil dikirim!');
-                // Simpan data kesalahan kembali ke localStorage
-                const updatedMistake = form.data.mistake;
-                const existingData = localStorage.getItem('setoran-data');
-                if (existingData) {
-                    const parsedData = JSON.parse(existingData);
-                    localStorage.setItem('setoran-data', JSON.stringify({ ...parsedData, mistake: updatedMistake }));
-                }
-                // Simpan wordErrors dan verseErrors secara terpisah
-                const wordErrorsFromMistake: { [key: number]: string } = {};
-                const verseErrorsFromMistake: { [key: number]: string } = {};
-                // Asumsi verses tersedia dari konteks atau prop (jika tidak ada, perlu diintegrasikan)
-                // Define the Verse and Word interfaces for proper typing
-                interface Word {
-                    id: number;
-                    text_uthmani: string;
-                    [key: string]: any;
-                }
-                interface Verse {
-                    id: number;
-                    verse_number: number;
-                    words: Word[];
-                    [key: string]: any;
-                }
-                const verses: Verse[] = []; // Ganti dengan data verses yang sesuai
-                Object.values(updatedMistake).forEach((pageData) => {
-                    pageData.salahKata.forEach((err) => {
-                        const word = verses.flatMap((v) => v.words).find((w) => w.text_uthmani === err.kata.text);
-                        if (word) {
-                            wordErrorsFromMistake[word.id] = err.salahKey;
-                        }
-                    });
-                    pageData.salahAyat.forEach((err) => {
-                        const verse = verses.find((v) => v.verse_number === err.noAyat);
-                        if (verse) {
-                            verseErrorsFromMistake[verse.id] = err.salahKey;
-                        }
-                    });
+
+        axios.post('/api/result', postData, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                Accept: 'application/json',
+            },
+        })
+        .then((response) => {
+            // Tampilkan notifikasi sukses
+            setShowSuccessNotification(true);
+            setTimeout(() => setShowSuccessNotification(false), 3000); // Hilang setelah 3 detik
+
+            // Simpan data kesalahan kembali ke localStorage
+            const updatedMistake = form.data.mistake;
+            const existingData = localStorage.getItem('setoran-data');
+            if (existingData) {
+                const parsedData = JSON.parse(existingData);
+                localStorage.setItem('setoran-data', JSON.stringify({ ...parsedData, mistake: updatedMistake }));
+            }
+            // Simpan wordErrors dan verseErrors secara terpisah
+            const wordErrorsFromMistake: { [key: number]: string } = {};
+            const verseErrorsFromMistake: { [key: number]: string } = {};
+            // Asumsi verses tersedia dari konteks atau prop (jika tidak ada, perlu diintegrasikan)
+            // Define the Verse and Word interfaces for proper typing
+            interface Word {
+                id: number;
+                text_uthmani: string;
+                [key: string]: any;
+            }
+            interface Verse {
+                id: number;
+                verse_number: number;
+                words: Word[];
+                [key: string]: any;
+            }
+            const verses: Verse[] = []; // Ganti dengan data verses yang sesuai
+            Object.values(updatedMistake).forEach((pageData) => {
+                pageData.salahKata.forEach((err) => {
+                    const word = verses.flatMap(v => v.words).find(w => w.text_uthmani === err.kata.text);
+                    if (word) {
+                        wordErrorsFromMistake[word.id] = err.salahKey;
+                    }
                 });
-                localStorage.setItem('wordErrors', JSON.stringify(wordErrorsFromMistake));
-                localStorage.setItem('verseErrors', JSON.stringify(verseErrorsFromMistake));
-                router.visit('/home');
-                // window.location.pathname = '/home'; // Redirect to home page after successful submission
-            })
-            .catch((error) => {
-                if (error.response && error.response.status === 422) {
-                    const errors = error.response.data.errors;
-                    Object.keys(errors).forEach((key) => {
-                        form.setError(key as keyof FormData, errors[key][0]);
-                    });
-                } else {
-                    console.error('Error:', error);
-                    form.setError('submit', 'Gagal mengirim data. Silakan coba lagi.');
-                }
+                pageData.salahAyat.forEach((err) => {
+                    const verse = verses.find(v => v.verse_number === err.noAyat);
+                    if (verse) {
+                        verseErrorsFromMistake[verse.id] = err.salahKey;
+                    }
+                });
             });
+            localStorage.setItem('wordErrors', JSON.stringify(wordErrorsFromMistake));
+            localStorage.setItem('verseErrors', JSON.stringify(verseErrorsFromMistake));
+
+            router.visit(route('home'));
+        })
+        .catch((error) => {
+            if (error.response && error.response.status === 422) {
+                const errors = error.response.data.errors;
+                Object.keys(errors).forEach((key) => {
+                    form.setError(key as keyof FormData, errors[key][0]);
+                });
+            } else {
+                console.error('Error:', error);
+                form.setError('submit', 'Gagal mengirim data. Silakan coba lagi.');
+            }
+        });
     };
 
-    if (!setoranData) {
+    if (!translationsReady || !setoranData) {
         return (
             <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
                 <div className="text-center">
@@ -453,7 +457,23 @@ const ResultFormLayout: React.FC = () => {
                             </svg>
                         </button>
 
-                        <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+                        {/* Notifikasi Sukses */}
+                        {showSuccessNotification && (
+                            <div className="mb-4 rounded-md bg-green-50 dark:bg-green-900 p-4 flex items-center">
+                                <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400 mr-2" />
+                                <p className="text-sm text-green-700 dark:text-green-200">Data berhasil dikirim</p>
+                            </div>
+                        )}
+
+                        {/* Notifikasi Sukses */}
+                        {showSuccessNotification && (
+                            <div className="mb-4 rounded-md bg-green-50 dark:bg-green-900 p-4 flex items-center">
+                                <CheckCircle2 className="h-5 w-5 text-green-500 dark:text-green-400 mr-2" />
+                                <p className="text-sm text-green-700 dark:text-green-200">Data berhasil dikirim</p>
+                            </div>
+                        )}
+
+                        <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-800">
                             <div className="mb-4 grid grid-cols-1 gap-4">
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-gray-700 dark:text-gray-300">

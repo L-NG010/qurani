@@ -293,8 +293,8 @@ export default function JuzIndex() {
             {/* <style>
                 {`
                     :root {
-                        --background-color: ${isDarkMode ? '#1a202c' : '#ffffff'};
-                        --text-color: ${isDarkMode ? '#ffffff' : '#000000'};
+                        --background-color: dark:#1a202c #ffffff};
+                        --text-color: dark: #ffffff  #000000};
                     }
                     body {
                         background-color: var(--background-color);
@@ -307,7 +307,7 @@ export default function JuzIndex() {
                         color: var(--text-color);
                     }
                     .border-gray-300 {
-                        border-color: ${isDarkMode ? '#4a5568' : '#e2e8f0'};
+                        border-color: dark:#4a5568 #e2e8f0};
                     }
                 `}
             </style> */}
@@ -351,6 +351,8 @@ export default function JuzIndex() {
                         const verseLabel = verseErrors[verse.id]
                             ? valdateErrorLabels().find((l: ErrorLabel) => l.key === verseErrors[verse.id])
                             : null;
+
+                        console.log(`Rendering verse ${verse.id} from Surah ${surahId}`);
 
                         return (
                             <>

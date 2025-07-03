@@ -59,6 +59,8 @@ class JuzController extends Controller
 
         // Fetch verses for the Juz
         $verses = Verses::whereIn('verse_key', $verseKeys)
+            ->orderByRaw("CAST(SUBSTRING_INDEX(verse_key, ':', 1) AS UNSIGNED)")
+            ->orderByRaw("CAST(SUBSTRING_INDEX(verse_key, ':', -1) AS UNSIGNED)")
             ->select([
                 'id',
                 'verse_number',

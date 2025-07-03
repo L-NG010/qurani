@@ -47,35 +47,51 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ fluidDesign, setoran }) => 
     }, []);
 
     const fetchSetoranDetails = async (id: number) => {
-        try {
-            const response = await axios.get(`/setoran/${id}`);
-            const setoranData = {
-                reciter: {
-                    user_id: response.data.penyetor?.username || '',
-                    user_name: response.data.penyetor?.username || '',
-                    full_name: response.data.penyetor?.fullname || '',
-                },
-                recipient: response.data.penerima?.fullname || '',
-                setoran_type: response.data.setoran || '',
-                surah_id: response.data.nomor?.toString() || '',
-                surah: {
-                    id: response.data.nomor?.toString() || '',
-                    name: response.data.surah_name || '',
-                    from: response.data.info?.split('-')[0] || '',
-                    to: response.data.info?.split('-')[1] || '',
-                },
-                mistake: response.data.perhalaman || {},
-                ket: response.data.ket || '',
-                conclusion: response.data.hasil || '',
-            };
+    try {
+        const response = await axios.get(`/setoran/${id}`);
+        const setoranData = {
+            reciter: {
+                user_id: response.data.penyetor?.username || '',
+                user_name: response.data.penyetor?.username || '',
+                full_name: response.data.penyetor?.fullname || '',
+            },
+            recipient: response.data.penerima?.fullname || '',
+            setoran_type: response.data.setoran || '',
+            surah_id: response.data.nomor?.toString() || '',
+            surah: {
+                id: response.data.nomor?.toString() || '',
+                name: response.data.surah_name || '',
+                from: response.data.info?.split('-')[0] || '',
+                to: response.data.info?.split('-')[1] || '',
+            },
+            mistake: response.data.perhalaman || {},
+            ket: response.data.ket || '',
+            conclusion: response.data.hasil || '',
+        };
 
-            localStorage.setItem('setoran-data', JSON.stringify(setoranData));
-            window.location.href = '/recap';
-        } catch (error) {
-            console.error('Error:', error);
-            alert(t('error.fetch_failed'));
-        }
-    };
+        // Simpan data ke localStorage (opsional, jika diperlukan di sisi klien)
+        localStorage.setItem('setoran-data', JSON.stringify(setoranData));
+
+        // Gunakan Inertia.js untuk navigasi ke rute /result dengan data sebagai props
+        router.visit('/result', {
+            data: {
+                surah: setoranData.surah,
+                verses: [], // Tambahkan logika untuk mengambil verses jika ada di response
+                // Jika verses tersedia di response, sesuaikan di sini
+            },
+            onSuccess: () => {
+                console.log('Navigasi berhasil ke /result');
+            },
+            onError: (errors) => {
+                console.error('Error navigasi:', errors);
+                alert(t('error.fetch_failed'));
+            },
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        alert(t('error.fetch_failed'));
+    }
+};
 
     const openUserProfile = (username: string) => {
         window.open(`${config.PARENT_WEB}/${username}`, '_blank');

@@ -3,7 +3,6 @@ import RecapForm from '@/features/result/components/resultForm'
 import { Head } from '@inertiajs/react'
 import AppWrapper from '@/components/layouts/app-wrapper'
 import QuranHeader from '@/components/layouts/main-header'
-import { Inertia } from '@inertiajs/inertia'
 
 const index = () => {
   return (

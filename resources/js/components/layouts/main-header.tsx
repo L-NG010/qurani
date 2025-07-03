@@ -1,6 +1,6 @@
 import { faHome } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { router } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -142,12 +142,12 @@ const QuranHeader: React.FC<QuranHeaderProps> = ({ page, translateMode = 'read',
     return (
         <div className={`px-0 ${classNav} fixed z-50 w-full bg-neutral-100 text-black dark:bg-gray-800 dark:text-white shadow-md`}>
             <div className="ml-3 mt-3 mb-3 flex items-center justify-between">
-                <div className="flex items-center">
-                    <div className="cursor-pointer" onClick={() => (router.visit("/home"))}>
+                <Link className="flex items-center" href={route('home')}>
+                    <div className="cursor-pointer" >
                         <FontAwesomeIcon icon={faHome} className={`${iconSize} ${isDarkMode ? 'text-gray-300' : 'text-[#2CA4AB]'}`} />
                     </div>
                     <span className={`ml-1 ${textSize} dark:text-gray-300`}>/ {displaySegment}</span>
-                </div>
+                </Link>
                 {translateMode === 'read' && (
                     <div className="flex w-auto cursor-pointer items-center justify-center p-1 text-center" onClick={handleClick}>
                         {!noFinishButton() && (

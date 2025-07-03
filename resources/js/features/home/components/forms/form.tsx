@@ -1,7 +1,6 @@
 import { useTheme } from '@/components/layouts/theme-context';
 import Combobox from '@/components/ui/combobox';
 import { setupTranslations } from '@/features/i18n/i18n';
-import { router, usePage } from '@inertiajs/react';
 import { Settings } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +9,7 @@ import { Chapter } from '../../types/chapter';
 import { Friend } from '../../types/friend';
 import { Group } from '../../types/group';
 import { Juz } from '../../types/juz';
+import { usePage, router } from '@inertiajs/react';
 
 // Fungsi untuk mengelola cookie
 const getCookie = (name: string): string | null => {
